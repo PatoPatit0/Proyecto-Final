@@ -1,3 +1,4 @@
+-- Active: 1778688418950@@127.0.0.1@3306@mysql
 DROP DATABASE IF EXISTS tienda_discos;
 
 CREATE DATABASE tienda_discos_1;

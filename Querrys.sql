@@ -5,8 +5,7 @@ USE tienda_discos_1;
 # Para esto, se puede usar la clasificación ABC (Pareto, 3 mejores productos según me explicó Yoshi)
 # y mostrar el porcentaje que representa cada producto del total de ingresos de la tienda, así como su clasificación (Clase A, B o C).
 WITH cte_ingresos_por_disco AS (
-    -- Paso 1: Calculamos el dinero total que ha metido cada disco a la caja
-    SELECT 
+    SELECT
         p.id_producto,
         p.titulo_album,
         g.nombre_genero,
@@ -16,16 +15,27 @@ WITH cte_ingresos_por_disco AS (
     INNER JOIN tienda_discos_1.generos g ON p.id_genero = g.id_genero
     GROUP BY p.id_producto, p.titulo_album, g.nombre_genero
 ),
+
 cte_proporciones AS (
-    SELECT 
+    SELECT
         id_producto,
         titulo_album,
         nombre_genero,
         ingresos_totales_disco,
         SUM(ingresos_totales_disco) OVER () AS ingresos_globales_tienda,
-        SUM(ingresos_totales_disco) OVER (ORDER BY ingresos_totales_disco DESC) AS suma_acumulada_dinero
+        SUM(ingresos_totales_disco) OVER (
+            ORDER BY ingresos_totales_disco DESC
+        ) AS suma_acumulada_dinero
     FROM cte_ingresos_por_disco
 )
+
+SELECT
+    id_producto,
+    titulo_album,
+    nombre_genero,
+    ingresos_totales_disco
+FROM cte_proporciones
+LIMIT 100;
 
 # Determinar a que categoría pertenece.
 
