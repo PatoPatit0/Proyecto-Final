@@ -18,7 +18,7 @@ BEGIN
     
     INSERT INTO tienda_discos_1.detalle_orden (id_orden, id_producto, cantidad, precio_unitario)
     VALUES (p_id_orden, p_id_producto, p_cantidad, v_precio_venta);
-    
+
 END //
 DELIMITER ;
 
@@ -38,7 +38,7 @@ BEGIN
     WHERE id_orden = p_id_orden;
 
     # Si ya está entregada o cancelada...
-    IF v_estado_actual = 'Cancelada por Sistema' OR v_estado_actual = 'Entregada' THEN
+    IF v_estado_actual = 'Cancelada por Sistema' OR v_estado_actual = 'entregada' THEN
        
        # No se cambia el estado.
         SELECT 'ERROR: No se puede cambiar el estado de una orden que ya fue Cancelada o Entregada' AS mensaje_error;
