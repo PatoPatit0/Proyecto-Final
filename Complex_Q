@@ -1,0 +1,88 @@
+USE tienda_discos_1;
+
+# Consulta compleja 1:
+# Clasificar los productos considerando el dinero que han generado a la tienda, es decir, qué tan importantes son para el negocio.
+# Para esto, se puede usar la clasificación ABC (Pareto, 3 mejores productos según me explicó Yoshi)
+# y mostrar el porcentaje que representa cada producto del total de ingresos de la tienda, así como su clasificación (Clase A, B o C).
+WITH cte_ingresos_por_disco AS (
+    -- Paso 1: Calculamos el dinero total que ha metido cada disco a la caja
+    SELECT 
+        p.id_producto,
+        p.titulo_album,
+        g.nombre_genero,
+        SUM(do.cantidad * do.precio_unitario) AS ingresos_totales_disco
+    FROM tienda_discos_1.detalle_orden do
+    INNER JOIN tienda_discos_1.productos p ON do.id_producto = p.id_producto
+    INNER JOIN tienda_discos_1.generos g ON p.id_genero = g.id_genero
+    GROUP BY p.id_producto, p.titulo_album, g.nombre_genero
+),
+cte_proporciones AS (
+    SELECT 
+        id_producto,
+        titulo_album,
+        nombre_genero,
+        ingresos_totales_disco,
+        SUM(ingresos_totales_disco) OVER () AS ingresos_globales_tienda,
+        SUM(ingresos_totales_disco) OVER (ORDER BY ingresos_totales_disco DESC) AS suma_acumulada_dinero
+    FROM cte_ingresos_por_disco
+)
+
+# Determinar a que categoría pertenece.
+
+SELECT 
+    id_producto,
+    titulo_album,
+    nombre_genero,
+    ingresos_totales_disco AS dinero_generado,
+    ROUND((ingresos_totales_disco / ingresos_globales_tienda) * 100, 2) AS porcentaje_del_total_tienda,
+    CASE 
+        WHEN (suma_acumulada_dinero / ingresos_globales_tienda) <= 0.70 THEN 'Clase A (Sostiene el negocio - 70%)'
+        WHEN (suma_acumulada_dinero / ingresos_globales_tienda) <= 0.90 THEN 'Clase B (Rentabilidad Media - 20%)'
+        ELSE 'Clase C (Poco movimiento / Relleno - 10%)'
+    END AS clasificacion_abc_pareto
+FROM cte_proporciones
+ORDER BY ingresos_totales_disco DESC;
+
+# Consulta compleja 2:
+# Análisis de clientes y su frecuencia de compra.
+# Muestra y premia a los clientes que más han gastado en la tienda, clasificándolos en segmentos
+# (por ejemplo: Cliente Platino, Oro, Bronce) según el total gastado.
+SELECT 
+    c.id_cliente,
+    c.nombre_completo,
+    COUNT(do.id_producto) AS total_discos_comprados, 
+    SUM(o.total_bruto) AS total_dinero_gastado,     
+    
+    CASE 
+        WHEN SUM(o.total_bruto) >= 1500 THEN 'Cliente Platino (Alta Prioridad)'
+        WHEN SUM(o.total_bruto) >= 500  THEN 'Cliente Oro (Frecuente)'
+        ELSE 'Cliente Bronce (Ocasional)'
+    END AS segmento_cliente
+
+FROM tienda_discos_1.clientes c
+INNER JOIN tienda_discos_1.ordenes o ON c.id_cliente = o.id_cliente
+INNER JOIN tienda_discos_1.detalle_orden do ON o.id_orden = do.id_orden
+GROUP BY c.id_cliente, c.nombre_completo
+HAVING total_dinero_gastado > 500 -- Filtro simple: solo los que gastaron más de 500
+ORDER BY total_dinero_gastado DESC;
+
+# Consulta compleja 3:
+SELECT 
+    p.id_producto,
+    p.titulo_album AS disco,
+    i.cantidad_stock AS piezas_en_tienda,
+    prov.nombre_provedor AS proveedor,
+    prov.telefono AS telefono_proveedor,
+    
+    CASE 
+        WHEN i.cantidad_stock = 0 THEN 'URGENTE: Desabasto Total'
+        ELSE 'ALERTA: Quedan Pocas Unidades'
+    END AS semaforo_urgencia
+
+FROM tienda_discos_1.inventario i
+INNER JOIN tienda_discos_1.productos p ON i.id_producto = p.id_producto
+INNER JOIN tienda_discos_1.restock r ON p.id_producto = r.id_producto
+INNER JOIN tienda_discos_1.proveedores prov ON r.id_proveedor = prov.id_proveedor
+GROUP BY p.id_producto, p.titulo_album, i.cantidad_stock, prov.nombre_provedor, prov.telefono
+HAVING piezas_en_tienda <= 5 
+ORDER BY i.cantidad_stock ASC; 
