@@ -65,6 +65,7 @@ CROSS JOIN (
 ORDER BY g.nombre_genero, sub.formato;
 
 # Listado de todos los productos junto con el nombre del proveedor (también productos sin proveedor asignado).
+# Tanto por derecha como por izquierda para mostrar ambos casos (productos sin proveedor y proveedores sin productos).
 SELECT 
     p.titulo_album,
     prov.nombre_provedor
