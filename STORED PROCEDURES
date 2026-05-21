@@ -1,0 +1,58 @@
+USE tienda_discos_1;
+
+#P1: Registro de un producto en una orden.
+DELIMITER //
+CREATE PROCEDURE tienda_discos_1.sp_registrar_producto_en_orden(
+    IN p_id_orden INT,
+    IN p_id_producto INT,
+    IN p_cantidad INT
+)
+
+BEGIN
+
+    DECLARE v_precio_venta DECIMAL(10,2);
+    
+    SELECT precio_venta INTO v_precio_venta 
+    FROM tienda_discos_1.productos 
+    WHERE id_producto = p_id_producto;
+    
+    INSERT INTO tienda_discos_1.detalle_orden (id_orden, id_producto, cantidad, precio_unitario)
+    VALUES (p_id_orden, p_id_producto, p_cantidad, v_precio_venta);
+    
+END //
+DELIMITER ;
+
+#P2: Actualización del estado de una orden.
+DELIMITER //
+
+CREATE PROCEDURE tienda_discos_1.sp_actualizar_estado_orden(
+    IN p_id_orden INT, 
+    IN p_nuevo_estado VARCHAR(50)
+)
+BEGIN
+    DECLARE v_estado_actual VARCHAR(50);
+
+    # Estado actual de la orden.
+    SELECT estado_orden INTO v_estado_actual
+    FROM tienda_discos_1.ordenes
+    WHERE id_orden = p_id_orden;
+
+    # Si ya está entregada o cancelada...
+    IF v_estado_actual = 'Cancelada por Sistema' OR v_estado_actual = 'Entregada' THEN
+       
+       # No se cambia el estado.
+        SELECT 'ERROR: No se puede cambiar el estado de una orden que ya fue Cancelada o Entregada' AS mensaje_error;
+    ELSE
+       
+       #Sino, se actualiza el estado de la orden.
+        UPDATE tienda_discos_1.ordenes
+        SET estado_orden = p_nuevo_estado
+        WHERE id_orden = p_id_orden;
+        
+        SELECT 'ÉXITO: Estado de la orden actualizado correctamente' AS mensaje_exito;
+    END IF;
+
+END //
+
+DELIMITER ;
+
